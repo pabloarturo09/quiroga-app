@@ -1,0 +1,131 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="content-card">
+            <h2 class="mb-4"><i class="fas fa-tachometer-alt me-2"></i>Panel de Control</h2>
+
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ total_users }}</h4>
+                                    <p class="card-text">Total de Usuarios</p>
+                                </div>
+                                <i class="fas fa-users fa-2x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ total_reservations }}</h4>
+                                    <p class="card-text">Total Reservaciones</p>
+                                </div>
+                                <i class="fas fa-calendar-check fa-2x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ pending_reservations }}</h4>
+                                    <p class="card-text">Pendientes</p>
+                                </div>
+                                <i class="fas fa-clock fa-2x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">Últimas Reservaciones</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_reservations %}
+                            <div class="list-group list-group-flush">
+                                {% for reservation in recent_reservations %}
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <h6 class="mb-1 fw-bold">
+                                                {{ reservation.date_display }}
+                                            </h6>
+                                            <p class="mb-1">
+                                                <strong class="time-slot">{{ reservation.start_time }} - {{
+                                                    reservation.end_time }}</strong>
+                                            </p>
+                                            <small class="text-muted">
+                                                <i class="fas fa-user me-1"></i>{{ reservation.user_name }}
+                                            </small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span
+                                                class="badge {% if reservation.status == 'confirmed' %}bg-success{% elif reservation.status == 'pending' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                                {{ reservation.status_display }}
+                                            </span>
+                                            <br>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-calendar-times fa-2x mb-3"></i><br>
+                                No hay reservaciones recientes
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mt-3">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0">Acciones Rápidas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('main.admin_reservations') }}" class="btn btn-primary">
+                                <i class="fas fa-list me-2"></i>Gestionar Reservaciones
+                            </a>
+                            <a href="{{ url_for('main.admin_users') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-users me-2"></i>Gestionar Usuarios
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+    .time-slot {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+        color: #333;
+    }
+</style>
+{% endblock %}

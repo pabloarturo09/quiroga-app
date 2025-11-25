@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Reservaciones{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2E7D32;
+            --primary-dark: #1B5E20;
+            --primary-light: #4CAF50;
+            --sidebar-width: 280px;
+            --sidebar-collapsed: 80px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            overflow-x: hidden;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h3 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+
+        .nav-item {
+            margin: 5px 15px;
+        }
+
+        .nav-link {
+            color: #555;
+            padding: 12px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .nav-link:hover {
+            background: #e8f5e9;
+            color: var(--primary-color);
+        }
+
+        .nav-link.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .nav-icon {
+            width: 24px;
+            margin-right: 12px;
+            text-align: center;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+            transition: all 0.3s ease;
+            min-height: 100vh;
+        }
+
+        .top-bar {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 280px;
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 0px;
+            }
+
+            .mobile-menu-btn {
+                display: block !important;
+            }
+
+            .top-bar {
+                padding: 12px 20px;
+                margin-bottom: 20px;
+            }
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-calendar-alt me-2"></i>Reservación de Sala</h3>
+            <small>Panel de Usuario</small>
+        </div>
+
+        <div class="sidebar-menu">
+            <nav class="nav flex-column">
+                <div class="nav-item">
+                    <a href="{{ url_for('main.user_dashboard') }}"
+                        class="nav-link {% if request.endpoint == 'main.user_dashboard' %}active{% endif %}">
+                        <i class="fas fa-tachometer-alt nav-icon"></i>
+                        Panel de Control
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <a href="{{ url_for('main.user_reservations') }}"
+                        class="nav-link {% if request.endpoint == 'main.user_reservations' %}active{% endif %}">
+                        <i class="fas fa-calendar-check nav-icon"></i>
+                        Mis Reservaciones
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <a href="{{ url_for('main.user_new_reservation') }}"
+                        class="nav-link {% if request.endpoint == 'main.user_new_reservation' %}active{% endif %}">
+                        <i class="fas fa-plus-circle nav-icon"></i>
+                        Nueva Reservación
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <a href="{{ url_for('main.user_ai_chat') }}"
+                        class="nav-link {% if request.endpoint == 'main.user_ai_chat' %}active{% endif %}">
+                        <i class="fas fa-robot nav-icon"></i>
+                        Chat con IA
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <a href="{{ url_for('main.about') }}"
+                        class="nav-link {% if request.endpoint == 'main.about' %}active{% endif %}">
+                        <i class="fas fa-info-circle nav-icon"></i>
+                        Acerca de
+                    </a>
+                </div>
+
+                <div class="nav-item mt-4">
+                    <a href="{{ url_for('main.logout') }}" class="nav-link text-danger">
+                        <i class="fas fa-sign-out-alt nav-icon"></i>
+                        Cerrar Sesión
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="main-content" id="mainContent">
+        <div class="top-bar">
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="d-flex align-items-center ms-auto">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {{ current_user.full_name[0] if current_user and current_user.full_name else 'U' }}
+                    </div>
+                    <div class="d-none d-md-block">
+                        <strong>{{ current_user.full_name if current_user else 'Usuario' }}</strong>
+                        <div class="text-muted small">{{ current_user.email if current_user else '' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-fluid">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show">
+                <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const mainContent = document.getElementById('mainContent');
+
+            function openSidebar() {
+                sidebar.classList.add('mobile-open');
+                sidebarOverlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('mobile-open');
+                sidebarOverlay.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+
+            function toggleSidebar() {
+                if (sidebar.classList.contains('mobile-open')) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            }
+
+            mobileMenuBtn.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', closeSidebar);
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function () {
+                    if (window.innerWidth <= 768) {
+                        closeSidebar();
+                    }
+                });
+            });
+
+            window.addEventListener('resize', function () {
+                if (window.innerWidth > 768) {
+                    closeSidebar();
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    closeSidebar();
+                }
+            });
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

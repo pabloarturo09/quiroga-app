@@ -1,0 +1,626 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Gestión de Reservaciones{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-avatar-sm {
+        width: 35px;
+        height: 35px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .action-buttons .btn {
+        padding: 4px 8px;
+        margin: 2px 2px;
+    }
+
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        color: #555;
+        font-size: 0.9rem;
+    }
+
+    .table tr {
+        vertical-align: middle;
+    }
+
+    .search-box {
+        max-width: 300px;
+    }
+
+    .pagination-info {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    .time-slot {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="content-card">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <h2><i class="fas fa-calendar-check me-2"></i>Gestión de Reservaciones</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createReservationModal">
+                    <i class="fas fa-plus me-2"></i>Nueva Reservación
+                </button>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="input-group search-box">
+                        <input type="text" class="form-control" placeholder="Buscar por usuario..." id="searchInput">
+                        <button class="btn btn-outline-primary" type="button" id="searchButton">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6 mt-3">
+                    <div class="d-flex gap-2 justify-content-end flex-wrap">
+                        <input type="date" class="form-control" style="max-width: 200px;" id="dateFilter">
+                        <select class="form-select" style="max-width: 200px;" id="statusFilter">
+                            <option value="">Todos los Estados</option>
+                            <option value="confirmed">Confirmada</option>
+                            <option value="pending">Pendiente</option>
+                            <option value="cancelled">Cancelada</option>
+                        </select>
+                        <button class="btn btn-outline-secondary" type="button" id="applyFiltersButton">
+                            <i class="fas fa-filter"></i> Aplicar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mb-3" id="loadingIndicator" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="text-muted mt-2">Cargando reservaciones...</p>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover" id="reservationsTable">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Fecha</th>
+                            <th>Hora Inicio</th>
+                            <th>Hora Fin</th>
+                            <th>Estado</th>
+                            <th>Creado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+            </div>
+
+            <nav aria-label="Reservation pagination" class="mt-4">
+                <ul class="pagination justify-content-center" id="paginationContainer">
+
+                </ul>
+                <div class="pagination-info text-center mt-2" id="paginationInfo"></div>
+            </nav>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="createReservationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-calendar-plus me-2"></i>Nueva Reservación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createReservationForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="createUser" class="form-label">Usuario *</label>
+                        <select class="form-select" id="createUser" name="user_id" required>
+                            <option value="">Seleccionar usuario...</option>
+
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createDate" class="form-label">Fecha *</label>
+                        <input type="date" class="form-control" id="createDate" name="reservation_date" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="createStartTime" class="form-label">Hora Inicio *</label>
+                                <input type="time" class="form-control" id="createStartTime" name="start_time" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="createEndTime" class="form-label">Hora Fin *</label>
+                                <input type="time" class="form-control" id="createEndTime" name="end_time" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Verifique que el horario esté disponible antes de crear la reservación.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Reservación</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editReservationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Editar Reservación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editReservationForm">
+                <input type="hidden" id="editReservationId" name="reservation_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Usuario</label>
+                        <input type="text" class="form-control" id="editUserName" disabled>
+                        <input type="hidden" id="editUserId" name="user_id">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDate" class="form-label">Fecha *</label>
+                        <input type="date" class="form-control" id="editDate" name="reservation_date" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editStartTime" class="form-label">Hora Inicio *</label>
+                                <input type="time" class="form-control" id="editStartTime" name="start_time" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editEndTime" class="form-label">Hora Fin *</label>
+                                <input type="time" class="form-control" id="editEndTime" name="end_time" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStatus" class="form-label">Estado</label>
+                        <select class="form-select" id="editStatus" name="status">
+                            <option value="pending">Pendiente</option>
+                            <option value="confirmed">Confirmada</option>
+                            <option value="cancelled">Cancelada</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Verifique que el horario esté disponible antes de actualizar.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Actualizar Reservación</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        let currentReservations = [];
+        let currentPage = 1;
+        let currentFilters = {
+            search: '',
+            status: '',
+            date: ''
+        };
+
+
+        loadReservations();
+        loadUsersForDropdown();
+
+
+        document.getElementById('createStartTime').value = "10:00";
+        document.getElementById('createEndTime').value = "12:00";
+
+
+        document.getElementById('searchButton').addEventListener('click', function () {
+            currentPage = 1;
+            loadReservations();
+        });
+
+        document.getElementById('applyFiltersButton').addEventListener('click', function () {
+            currentPage = 1;
+            loadReservations();
+        });
+
+        document.getElementById('searchInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                currentPage = 1;
+                loadReservations();
+            }
+        });
+
+        const editReservationModal = document.getElementById('editReservationModal');
+        editReservationModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const reservationId = button.getAttribute('data-reservation-id');
+            const reservation = currentReservations.find(r => r.id == reservationId);
+
+            if (reservation) {
+                document.getElementById('editReservationId').value = reservation.id;
+                document.getElementById('editUserId').value = reservation.user_id;
+                document.getElementById('editUserName').value = reservation.user_name;
+                const dateParts = reservation.reservation_date.split('-');
+                const formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                document.getElementById('editDate').value = formattedDate;
+                document.getElementById('editStartTime').value = reservation.start_time;
+                document.getElementById('editEndTime').value = reservation.end_time;
+                document.getElementById('editStatus').value = reservation.status;
+            }
+        });
+
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('.cancel-btn')) {
+                const button = e.target.closest('.cancel-btn');
+                const reservationId = button.getAttribute('data-reservation-id');
+                const reservation = currentReservations.find(r => r.id == reservationId);
+
+                if (reservation) {
+                    if (confirm(`¿Estás seguro de que deseas cancelar la reservación de ${reservation.user_name} para el ${reservation.reservation_date}?`)) {
+                        cancelReservation(reservationId, button);
+                    }
+                }
+            }
+        });
+
+        document.getElementById('createReservationForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            createReservation();
+        });
+
+        document.getElementById('editReservationForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            updateReservation();
+        });
+
+        function loadReservations() {
+            const search = document.getElementById('searchInput').value;
+            const status = document.getElementById('statusFilter').value;
+            const date = document.getElementById('dateFilter').value;
+
+            currentFilters = { search, status, date };
+
+            showLoading(true);
+
+            const params = new URLSearchParams();
+            if (search) params.append('search', search);
+            if (status) params.append('status', status);
+            if (date) params.append('date', date);
+            params.append('page', currentPage);
+            params.append('per_page', 15);
+
+            fetch(`/api/admin/reservations?${params}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentReservations = data.reservations;
+                        renderReservationsTable(data.reservations);
+                        renderPagination(data.pagination);
+                    } else {
+                        alert('Error al cargar reservaciones: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al cargar reservaciones');
+                })
+                .finally(() => {
+                    showLoading(false);
+                });
+        }
+
+        function loadUsersForDropdown() {
+            fetch('/api/admin/reservations/users/active')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const select = document.getElementById('createUser');
+                        select.innerHTML = '<option value="">Seleccionar usuario...</option>';
+                        data.users.forEach(user => {
+                            const option = document.createElement('option');
+                            option.value = user.id;
+                            option.textContent = `${user.name} (${user.email})`;
+                            select.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading users:', error);
+                });
+        }
+
+        function showLoading(show) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const reservationsTable = document.getElementById('reservationsTable');
+
+            if (show) {
+                loadingIndicator.style.display = 'block';
+                reservationsTable.style.opacity = '0.5';
+            } else {
+                loadingIndicator.style.display = 'none';
+                reservationsTable.style.opacity = '1';
+            }
+        }
+
+        function renderReservationsTable(reservations) {
+            const tbody = document.querySelector('#reservationsTable tbody');
+            tbody.innerHTML = '';
+
+            if (reservations.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-calendar-times fa-2x mb-3"></i><br>
+                            No se encontraron reservaciones.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            reservations.forEach(reservation => {
+                const statusClass = {
+                    'confirmed': 'bg-success',
+                    'pending': 'bg-warning',
+                    'cancelled': 'bg-secondary'
+                }[reservation.status] || 'bg-secondary';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="d-flex align-items-center flex-nowrap">
+                            <div class="user-avatar-sm me-3 flex-shrink-0">${reservation.avatar_initials}</div>
+                            <div class="flex-grow-1">
+                                <div class="fw-medium">${reservation.user_name}</div>
+                                <small class="text-muted">${reservation.user_email}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${reservation.reservation_date}</td>
+                    <td><span class="time-slot">${reservation.start_time}</span></td>
+                    <td><span class="time-slot">${reservation.end_time}</span></td>
+                    <td>
+                        <span class="status-badge ${statusClass} text-white">
+                            ${reservation.status_display}
+                        </span>
+                    </td>
+                    <td>${reservation.created_at}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editReservationModal"
+                                    data-reservation-id="${reservation.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            ${reservation.status !== 'cancelled' ? `
+                            <button class="btn btn-sm btn-outline-danger cancel-btn"
+                                    data-reservation-id="${reservation.id}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderPagination(pagination) {
+            const paginationContainer = document.getElementById('paginationContainer');
+            if (!paginationContainer) return;
+
+            const { page, total_pages, total_count } = pagination;
+
+            let paginationHTML = '';
+
+            if (page > 1) {
+                paginationHTML += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="${page - 1}">Anterior</a>
+                    </li>
+                `;
+            } else {
+                paginationHTML += `
+                    <li class="page-item disabled">
+                        <span class="page-link">Anterior</span>
+                    </li>
+                `;
+            }
+
+            const startPage = Math.max(1, page - 2);
+            const endPage = Math.min(total_pages, page + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === page) {
+                    paginationHTML += `
+                        <li class="page-item active">
+                            <span class="page-link">${i}</span>
+                        </li>
+                    `;
+                } else {
+                    paginationHTML += `
+                        <li class="page-item">
+                            <a class="page-link" href="#" data-page="${i}">${i}</a>
+                        </li>
+                    `;
+                }
+            }
+
+            if (page < total_pages) {
+                paginationHTML += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="${page + 1}">Siguiente</a>
+                    </li>
+                `;
+            } else {
+                paginationHTML += `
+                    <li class="page-item disabled">
+                        <span class="page-link">Siguiente</span>
+                    </li>
+                `;
+            }
+
+            paginationContainer.innerHTML = paginationHTML;
+
+            paginationContainer.querySelectorAll('.page-link[data-page]').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    currentPage = parseInt(this.getAttribute('data-page'));
+                    loadReservations();
+                });
+            });
+
+            const paginationInfo = document.getElementById('paginationInfo');
+            const startReservation = ((page - 1) * 15) + 1;
+            const endReservation = Math.min(page * 15, total_count);
+
+            paginationInfo.innerHTML = `
+                Mostrando ${startReservation} a ${endReservation} de ${total_count} reservaciones
+            `;
+        }
+
+        function createReservation() {
+            const form = document.getElementById('createReservationForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creando...';
+            submitBtn.disabled = true;
+
+            fetch('/api/admin/reservations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        bootstrap.Modal.getInstance(document.getElementById('createReservationModal')).hide();
+                        form.reset();
+                        document.getElementById('createDate').valueAsDate = new Date();
+                        loadReservations();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al crear reservación');
+                })
+                .finally(() => {
+                    submitBtn.innerHTML = 'Crear Reservación';
+                    submitBtn.disabled = false;
+                });
+        }
+
+        function updateReservation() {
+            const form = document.getElementById('editReservationForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Actualizando...';
+            submitBtn.disabled = true;
+
+            fetch(`/api/admin/reservations/${data.reservation_id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        bootstrap.Modal.getInstance(document.getElementById('editReservationModal')).hide();
+                        loadReservations();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al actualizar reservación');
+                })
+                .finally(() => {
+                    submitBtn.innerHTML = 'Actualizar Reservación';
+                    submitBtn.disabled = false;
+                });
+        }
+
+        function cancelReservation(reservationId, button) {
+            const originalHTML = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            button.disabled = true;
+
+            fetch(`/api/admin/reservations/${reservationId}/cancel`, {
+                method: 'PUT'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        loadReservations();
+                    } else {
+                        alert('Error: ' + data.message);
+                        button.innerHTML = originalHTML;
+                        button.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al cancelar reservación');
+                    button.innerHTML = originalHTML;
+                    button.disabled = false;
+                });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends "user/base.html" %}
+
+{% block title %}Dashboard - Usuario{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="content-card">
+            <h2 class="mb-4"><i class="fas fa-tachometer-alt me-2"></i>Panel de Control</h2>
+            
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ upcoming_count }}</h4>
+                                    <p class="card-text">Próximas</p>
+                                </div>
+                                <i class="fas fa-clock fa-2x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ total_count }}</h4>
+                                    <p class="card-text">Total</p>
+                                </div>
+                                <i class="fas fa-calendar-alt fa-2x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ cancelled_count }}</h4>
+                                    <p class="card-text">Canceladas</p>
+                                </div>
+                                <i class="fas fa-times-circle fa-2x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">Próximas Reservaciones</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if upcoming_reservations %}
+                            <div class="list-group list-group-flush">
+                                {% for reservation in upcoming_reservations %}
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <h6 class="mb-1 fw-bold">
+                                                {{ reservation.date_display }}
+                                            </h6>
+                                            <p class="mb-1">
+                                                <strong class="time-slot">{{ reservation.start_time }} - {{ reservation.end_time }}</strong>
+                                            </p>
+                                        </div>
+                                        <span class="badge {% if reservation.status == 'confirmed' %}bg-success{% else %}bg-warning{% endif %}">
+                                            {{ reservation.status_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-calendar-plus fa-2x mb-3"></i><br>
+                                No hay próximas reservaciones
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">Acciones Rápidas</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('main.user_new_reservation') }}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>Nueva Reservación
+                                </a>
+                                <a href="{{ url_for('main.user_reservations') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-list me-2"></i>Ver Todas mis Reservaciones
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+    .time-slot {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+        color: #333;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,592 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Gestión de Inventario{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-avatar-sm {
+        width: 35px;
+        height: 35px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .action-buttons .btn {
+        padding: 4px 8px;
+        margin: 2px 2px;
+    }
+
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        color: #555;
+        font-size: 0.9rem;
+    }
+
+    .table tr {
+        vertical-align: middle;
+    }
+
+    .search-box {
+        max-width: 300px;
+    }
+
+    .pagination-info {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    .type-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="content-card">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <h2><i class="fas fa-boxes me-2"></i>Gestión de Inventario</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createItemModal">
+                    <i class="fas fa-plus me-2"></i>Nuevo Item
+                </button>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="input-group search-box">
+                        <input type="text" class="form-control" placeholder="Buscar por identificador..."
+                            id="searchInput">
+                        <button class="btn btn-outline-primary" type="button" id="searchButton">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6 mt-3">
+                    <div class="d-flex gap-2 justify-content-end flex-wrap">
+                        <select class="form-select" style="max-width: 200px;" id="typeFilter">
+                            <option value="">Todos los Tipos</option>
+                            <option value="computadora">Computadora</option>
+                            <option value="pantalla">Pantalla</option>
+                            <option value="lentes_vr">Lentes VR</option>
+                        </select>
+                        <select class="form-select" style="max-width: 200px;" id="statusFilter">
+                            <option value="">Todos los Estados</option>
+                            <option value="available">Disponible</option>
+                            <option value="maintenance">En Mantenimiento</option>
+                            <option value="broken">Dañado</option>
+                        </select>
+                        <button class="btn btn-outline-secondary" type="button" id="applyFiltersButton">
+                            <i class="fas fa-filter"></i> Aplicar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mb-3" id="loadingIndicator" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="text-muted mt-2">Cargando inventario...</p>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover" id="inventoryTable">
+                    <thead>
+                        <tr>
+                            <th>Identificador</th>
+                            <th>Tipo</th>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Estado</th>
+                            <th>Creado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+            </div>
+
+
+            <nav aria-label="Inventory pagination" class="mt-4">
+                <ul class="pagination justify-content-center" id="paginationContainer">
+
+                </ul>
+                <div class="pagination-info text-center mt-2" id="paginationInfo"></div>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createItemModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Nuevo Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createItemForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="createIdentificador" class="form-label">Identificador *</label>
+                        <input type="text" class="form-control" id="createIdentificador" name="identificador" required>
+                        <div class="form-text">Nombre o código único para identificar el item</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createItemType" class="form-label">Tipo *</label>
+                        <select class="form-select" id="createItemType" name="item_type" required>
+                            <option value="">Seleccionar tipo...</option>
+                            <option value="computadora">Computadora</option>
+                            <option value="pantalla">Pantalla</option>
+                            <option value="lentes_vr">Lentes VR</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="createBrand" class="form-label">Marca</label>
+                                <input type="text" class="form-control" id="createBrand" name="brand">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="createModel" class="form-label">Modelo</label>
+                                <input type="text" class="form-control" id="createModel" name="model">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createStatus" class="form-label">Estado</label>
+                        <select class="form-select" id="createStatus" name="status">
+                            <option value="available">Disponible</option>
+                            <option value="maintenance">En Mantenimiento</option>
+                            <option value="broken">Dañado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editItemModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Editar Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editItemForm">
+                <input type="hidden" id="editItemId" name="item_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editIdentificador" class="form-label">Identificador *</label>
+                        <input type="text" class="form-control" id="editIdentificador" name="identificador" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editItemType" class="form-label">Tipo *</label>
+                        <select class="form-select" id="editItemType" name="item_type" required>
+                            <option value="computadora">Computadora</option>
+                            <option value="pantalla">Pantalla</option>
+                            <option value="lentes_vr">Lentes VR</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editBrand" class="form-label">Marca</label>
+                                <input type="text" class="form-control" id="editBrand" name="brand">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editModel" class="form-label">Modelo</label>
+                                <input type="text" class="form-control" id="editModel" name="model">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStatus" class="form-label">Estado</label>
+                        <select class="form-select" id="editStatus" name="status">
+                            <option value="available">Disponible</option>
+                            <option value="maintenance">En Mantenimiento</option>
+                            <option value="broken">Dañado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Actualizar Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        let currentItems = [];
+        let currentPage = 1;
+        let currentFilters = {
+            search: '',
+            type: '',
+            status: ''
+        };
+
+        loadItems();
+
+
+        document.getElementById('searchButton').addEventListener('click', function () {
+            currentPage = 1;
+            loadItems();
+        });
+
+
+        document.getElementById('applyFiltersButton').addEventListener('click', function () {
+            currentPage = 1;
+            loadItems();
+        });
+
+
+        document.getElementById('searchInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                currentPage = 1;
+                loadItems();
+            }
+        });
+
+
+        const editItemModal = document.getElementById('editItemModal');
+        editItemModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const itemId = button.getAttribute('data-item-id');
+            const item = currentItems.find(i => i.id == itemId);
+
+            if (item) {
+                document.getElementById('editItemId').value = item.id;
+                document.getElementById('editIdentificador').value = item.identificador;
+                document.getElementById('editItemType').value = item.item_type;
+                document.getElementById('editBrand').value = item.brand || '';
+                document.getElementById('editModel').value = item.model || '';
+                document.getElementById('editStatus').value = item.status;
+            }
+        });
+
+
+        document.getElementById('createItemForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            createItem();
+        });
+
+        document.getElementById('editItemForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            updateItem();
+        });
+
+
+        function loadItems() {
+            const search = document.getElementById('searchInput').value;
+            const type = document.getElementById('typeFilter').value;
+            const status = document.getElementById('statusFilter').value;
+
+
+            currentFilters = { search, type, status };
+
+            showLoading(true);
+
+            const params = new URLSearchParams();
+            if (search) params.append('search', search);
+            if (type) params.append('type', type);
+            if (status) params.append('status', status);
+            params.append('page', currentPage);
+            params.append('per_page', 15);
+
+            fetch(`/api/inventory/items?${params}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentItems = data.items;
+                        renderItemsTable(data.items);
+                        renderPagination(data.pagination);
+                    } else {
+                        alert('Error al cargar inventario: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al cargar inventario');
+                })
+                .finally(() => {
+                    showLoading(false);
+                });
+        }
+
+        function showLoading(show) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const inventoryTable = document.getElementById('inventoryTable');
+
+            if (show) {
+                loadingIndicator.style.display = 'block';
+                inventoryTable.style.opacity = '0.5';
+            } else {
+                loadingIndicator.style.display = 'none';
+                inventoryTable.style.opacity = '1';
+            }
+        }
+
+        function renderItemsTable(items) {
+            const tbody = document.querySelector('#inventoryTable tbody');
+            tbody.innerHTML = '';
+
+            if (items.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-boxes fa-2x mb-3"></i><br>
+                            No se encontraron items en el inventario.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            items.forEach(item => {
+                const typeClass = {
+                    'computadora': 'bg-primary',
+                    'pantalla': 'bg-info',
+                    'lentes_vr': 'bg-success'
+                }[item.item_type] || 'bg-secondary';
+
+                const statusClass = {
+                    'available': 'bg-success',
+                    'maintenance': 'bg-warning',
+                    'broken': 'bg-danger'
+                }[item.status] || 'bg-secondary';
+
+                const typeDisplay = {
+                    'computadora': 'Computadora',
+                    'pantalla': 'Pantalla',
+                    'lentes_vr': 'Lentes VR'
+                }[item.item_type] || item.item_type;
+
+                const statusDisplay = {
+                    'available': 'Disponible',
+                    'maintenance': 'En Mantenimiento',
+                    'broken': 'Dañado'
+                }[item.status] || item.status;
+
+                const createdDate = new Date(item.created_at).toLocaleDateString('es-ES');
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="fw-medium">${item.identificador}</div>
+                    </td>
+                    <td>
+                        <span class="type-badge ${typeClass} text-white">
+                            ${typeDisplay}
+                        </span>
+                    </td>
+                    <td>${item.brand || '-'}</td>
+                    <td>${item.model || '-'}</td>
+                    <td>
+                        <span class="status-badge ${statusClass} text-white">
+                            ${statusDisplay}
+                        </span>
+                    </td>
+                    <td>${createdDate}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editItemModal"
+                                    data-item-id="${item.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderPagination(pagination) {
+            const paginationContainer = document.getElementById('paginationContainer');
+            if (!paginationContainer) return;
+
+            const { page, total_pages, total_count } = pagination;
+
+            let paginationHTML = '';
+
+
+            if (page > 1) {
+                paginationHTML += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="${page - 1}">Anterior</a>
+                    </li>
+                `;
+            } else {
+                paginationHTML += `
+                    <li class="page-item disabled">
+                        <span class="page-link">Anterior</span>
+                    </li>
+                `;
+            }
+
+
+            const startPage = Math.max(1, page - 2);
+            const endPage = Math.min(total_pages, page + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === page) {
+                    paginationHTML += `
+                        <li class="page-item active">
+                            <span class="page-link">${i}</span>
+                        </li>
+                    `;
+                } else {
+                    paginationHTML += `
+                        <li class="page-item">
+                            <a class="page-link" href="#" data-page="${i}">${i}</a>
+                        </li>
+                    `;
+                }
+            }
+
+
+            if (page < total_pages) {
+                paginationHTML += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="${page + 1}">Siguiente</a>
+                    </li>
+                `;
+            } else {
+                paginationHTML += `
+                    <li class="page-item disabled">
+                        <span class="page-link">Siguiente</span>
+                    </li>
+                `;
+            }
+
+            paginationContainer.innerHTML = paginationHTML;
+
+
+            paginationContainer.querySelectorAll('.page-link[data-page]').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    currentPage = parseInt(this.getAttribute('data-page'));
+                    loadItems();
+                });
+            });
+
+
+            const paginationInfo = document.getElementById('paginationInfo');
+            const startItem = ((page - 1) * 15) + 1;
+            const endItem = Math.min(page * 15, total_count);
+
+            paginationInfo.innerHTML = `
+                Mostrando ${startItem} a ${endItem} de ${total_count} items
+            `;
+        }
+
+        function createItem() {
+            const form = document.getElementById('createItemForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creando...';
+            submitBtn.disabled = true;
+
+            fetch('/api/inventory/items', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        bootstrap.Modal.getInstance(document.getElementById('createItemModal')).hide();
+                        form.reset();
+                        loadItems();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al crear item');
+                })
+                .finally(() => {
+                    submitBtn.innerHTML = 'Crear Item';
+                    submitBtn.disabled = false;
+                });
+        }
+
+        function updateItem() {
+            const form = document.getElementById('editItemForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Actualizando...';
+            submitBtn.disabled = true;
+
+            fetch(`/api/inventory/items/${data.item_id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        bootstrap.Modal.getInstance(document.getElementById('editItemModal')).hide();
+                        loadItems();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al actualizar item');
+                })
+                .finally(() => {
+                    submitBtn.innerHTML = 'Actualizar Item';
+                    submitBtn.disabled = false;
+                });
+        }
+    });
+</script>
+{% endblock %}

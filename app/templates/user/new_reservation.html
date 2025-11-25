@@ -1,0 +1,133 @@
+{% extends "user/base.html" %}
+
+{% block title %}Nueva Reservación{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="content-card">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-plus-circle me-2"></i>Nueva Reservación</h2>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form id="reservationForm">
+                        <div class="mb-3">
+                            <label for="reservationDate" class="form-label">Fecha *</label>
+                            <input type="date" class="form-control" id="reservationDate" name="reservation_date"
+                                required>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="startTime" class="form-label">Hora Inicio *</label>
+                                    <input type="time" class="form-control" id="startTime" name="start_time" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="endTime" class="form-label">Hora Fin *</label>
+                                    <input type="time" class="form-control" id="endTime" name="end_time" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Se verifica que el horario esté disponible antes de crear la reservación.
+                        </div>
+
+                        <div class="d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-secondary" onclick="history.back()">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-calendar-plus me-2"></i>Crear Reservación
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('reservationDate').min = today;
+        document.getElementById('reservationDate').value = today;
+        
+        document.getElementById('startTime').value = '09:00';
+        document.getElementById('endTime').value = '10:00';
+        
+        document.getElementById('reservationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            createReservation();
+        });
+        
+        function createReservation() {
+            const formData = new FormData(document.getElementById('reservationForm'));
+            const data = {
+                reservation_date: formData.get('reservation_date'),
+                start_time: formData.get('start_time'),
+                end_time: formData.get('end_time')
+            };
+            
+            if (data.start_time >= data.end_time) {
+                alert('La hora de fin debe ser posterior a la hora de inicio');
+                return;
+            }
+            
+            const submitBtn = document.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creando...';
+            submitBtn.disabled = true;
+
+            fetch('/api/user/reservations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.href = "{{ url_for('main.user_reservations') }}";
+                } else {
+                    alert('Error: ' + data.message);
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al crear reservación');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        }
+
+        document.getElementById('startTime').addEventListener('change', validateTimes);
+        document.getElementById('endTime').addEventListener('change', validateTimes);
+        
+        function validateTimes() {
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            
+            if (startTime && endTime && startTime >= endTime) {
+                document.getElementById('endTime').classList.add('is-invalid');
+            } else {
+                document.getElementById('endTime').classList.remove('is-invalid');
+            }
+        }
+    });
+</script>
+{% endblock %}

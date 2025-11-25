@@ -1,0 +1,81 @@
+{% extends "user/base.html" %}
+
+{% block title %}Acerca del Sistema{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="content-card">
+            <h2 class="mb-4"><i class="fas fa-info-circle me-2"></i>Acerca del Sistema</h2>
+
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-desktop me-2 text-primary"></i>Información del Sistema
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <strong class="text-primary">Nombre del Sistema:</strong>
+                                <p class="mb-0 mt-1">Sistema de Control de Inventario y Reservas de
+                                    Laboratorio de Realidad Virtual y Realidad Aumentada</p>
+                            </div>
+                            <div class="mb-3">
+                                <strong class="text-primary">Institución:</strong>
+                                <p class="mb-0 mt-1">Universidad Juárez Autónoma de Tabasco (UJAT)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <strong class="text-primary">Administradora del Sistema:</strong>
+                                <p class="mb-0 mt-1">Dra. María de los Ángeles Olán</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cogs me-2 text-success"></i>Funcionalidades Principales
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-calendar-check text-success me-3 fa-lg"></i>
+                                <div>
+                                    <h6 class="mb-1">Gestión de Reservaciones</h6>
+                                    <small class="text-muted">Control laboratorio</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-user-shield text-info me-3 fa-lg"></i>
+                                <div>
+                                    <h6 class="mb-1">Panel de Administración</h6>
+                                    <small class="text-muted">Gestión del sistema</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-users text-warning me-3 fa-lg"></i>
+                                <div>
+                                    <h6 class="mb-1">Control de Usuarios</h6>
+                                    <small class="text-muted">Administración de accesos</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

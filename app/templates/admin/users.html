@@ -1,0 +1,683 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Gestión de Usuarios{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-avatar-sm {
+        width: 35px;
+        height: 35px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .action-buttons .btn {
+        padding: 4px 8px;
+        margin: 2px 2px;
+    }
+    
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        color: #555;
+        font-size: 0.9rem;
+    }
+
+    .table tr {
+        vertical-align: middle;
+    }
+    
+    .search-box {
+        max-width: 300px;
+    }
+    
+    .pagination-info {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="content-card">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <h2><i class="fas fa-users me-2"></i>Gestión de Usuarios</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                    <i class="fas fa-plus me-2"></i>Crear Usuario
+                </button>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="input-group search-box">
+                        <input type="text" class="form-control" placeholder="Buscar usuarios..." id="searchInput">
+                        <button class="btn btn-outline-primary" type="button" id="searchButton">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6 mt-3">
+                    <div class="d-flex gap-2 justify-content-end">
+                        <select class="form-select" style="max-width: 200px;" id="statusFilter">
+                            <option value="">Todos los Estados</option>
+                            <option value="active">Activo</option>
+                            <option value="inactive">Inactivo</option>
+                        </select>
+                        <select class="form-select" style="max-width: 200px;" id="roleFilter">
+                            <option value="">Todos los Roles</option>
+                            <option value="admin">Administrador</option>
+                            <option value="user">Usuario</option>
+                        </select>
+                        <button class="btn btn-outline-secondary" type="button" id="applyFiltersButton">
+                            <i class="fas fa-filter"></i> Aplicar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mb-3" id="loadingIndicator" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="text-muted mt-2">Cargando usuarios...</p>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover" id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                            <th>Creado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                       
+                    </tbody>
+                </table>
+            </div>
+
+            <nav aria-label="User pagination" class="mt-4">
+                <ul class="pagination justify-content-center" id="paginationContainer">
+                </ul>
+                <div class="pagination-info text-center mt-2" id="paginationInfo"></div>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Crear Nuevo Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createUserForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="createFullName" class="form-label">Nombre Completo *</label>
+                        <input type="text" class="form-control" id="createFullName" name="full_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createUsername" class="form-label">Username *</label>
+                        <input type="text" class="form-control" id="createUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createEmail" class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="createEmail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createPassword" class="form-label">Contraseña *</label>
+                        <input type="password" class="form-control" id="createPassword" name="password" required>
+                        <div class="form-text">La contraseña debe tener al menos 8 caracteres.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createRole" class="form-label">Rol</label>
+                        <select class="form-select" id="createRole" name="role">
+                            <option value="user">Usuario</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Editar Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId" name="user_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editFullName" class="form-label">Nombre Completo *</label>
+                        <input type="text" class="form-control" id="editFullName" name="full_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editUsername" class="form-label">Nombre de Usuario *</label>
+                        <input type="text" class="form-control" id="editUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="editEmail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRole" class="form-label">Rol</label>
+                        <select class="form-select" id="editRole" name="role">
+                            <option value="user">Usuario</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="editIsActive" name="is_active" checked>
+                            <label class="form-check-label" for="editIsActive">
+                                Usuario Activo
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Actualizar Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-key me-2"></i>Cambiar Contraseña</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="changePasswordForm">
+                <input type="hidden" id="changePasswordUserId" name="user_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Usuario: <strong id="changePasswordUsername"></strong></label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label">Nueva Contraseña *</label>
+                        <input type="password" class="form-control" id="newPassword" name="new_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">Confirmar Nueva Contraseña *</label>
+                        <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        La contraseña debe tener al menos 8 caracteres
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Cambiar Contraseña</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let currentUsers = [];
+        let currentPage = 1;
+        let currentFilters = {
+            search: '',
+            status: '',
+            role: ''
+        };
+        
+        loadUsers();
+        
+        document.getElementById('searchButton').addEventListener('click', function() {
+            currentPage = 1;
+            loadUsers();
+        });
+        
+
+        document.getElementById('applyFiltersButton').addEventListener('click', function() {
+            currentPage = 1;
+            loadUsers();
+        });
+        
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                currentPage = 1;
+                loadUsers();
+            }
+        });
+        
+        const editUserModal = document.getElementById('editUserModal');
+        editUserModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const userId = button.getAttribute('data-user-id');
+            const user = currentUsers.find(u => u.id == userId);
+            
+            if (user) {
+                document.getElementById('editUserId').value = user.id;
+                document.getElementById('editFullName').value = user.full_name;
+                document.getElementById('editUsername').value = user.username;
+                document.getElementById('editEmail').value = user.email;
+                document.getElementById('editRole').value = user.role;
+                document.getElementById('editIsActive').checked = user.status === 'active';
+            }
+        });
+
+        const changePasswordModal = document.getElementById('changePasswordModal');
+        changePasswordModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const userId = button.getAttribute('data-user-id');
+            const user = currentUsers.find(u => u.id == userId);
+            
+            if (user) {
+                document.getElementById('changePasswordUserId').value = user.id;
+                document.getElementById('changePasswordUsername').textContent = user.username;
+                
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+            }
+        });
+
+        const changePasswordForm = document.getElementById('changePasswordForm');
+        changePasswordForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const userId = document.getElementById('changePasswordUserId').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (newPassword !== confirmPassword) {
+                alert('Las contraseñas no coinciden!');
+                return false;
+            }
+            
+            if (newPassword.length < 8) {
+                alert('La contraseña debe tener al menos 8 caracteres!');
+                return false;
+            }
+            
+            changeUserPassword(userId, newPassword);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.deactivate-btn')) {
+                const button = e.target.closest('.deactivate-btn');
+                const userId = button.getAttribute('data-user-id');
+                const user = currentUsers.find(u => u.id == userId);
+                
+                if (user) {
+                    const action = user.status === 'active' ? 'desactivar' : 'activar';
+                    if (confirm(`¿Estás seguro de que deseas ${action} el usuario "${user.username}"?`)) {
+                        toggleUserStatus(userId, button);
+                    }
+                }
+            }
+        });
+
+        document.getElementById('createUserForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            createUser();
+        });
+
+        document.getElementById('editUserForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            updateUser();
+        });
+
+        function loadUsers() {
+            const search = document.getElementById('searchInput').value;
+            const status = document.getElementById('statusFilter').value;
+            const role = document.getElementById('roleFilter').value;
+            
+            currentFilters = { search, status, role };
+            
+            showLoading(true);
+            
+            const params = new URLSearchParams();
+            if (search) params.append('search', search);
+            if (status) params.append('status', status);
+            if (role) params.append('role', role);
+            params.append('page', currentPage);
+            params.append('per_page', 15);
+            
+            fetch(`/api/admin/users?${params}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentUsers = data.users;
+                        renderUsersTable(data.users);
+                        renderPagination(data.pagination);
+                    } else {
+                        alert('Error al cargar usuarios: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al cargar usuarios');
+                })
+                .finally(() => {
+                    showLoading(false);
+                });
+        }
+        
+        function showLoading(show) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const usersTable = document.getElementById('usersTable');
+            
+            if (show) {
+                loadingIndicator.style.display = 'block';
+                usersTable.style.opacity = '0.5';
+            } else {
+                loadingIndicator.style.display = 'none';
+                usersTable.style.opacity = '1';
+            }
+        }
+        
+        function renderUsersTable(users) {
+            const tbody = document.querySelector('#usersTable tbody');
+            tbody.innerHTML = '';
+            
+            if (users.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-users fa-2x mb-3"></i><br>
+                            No se encontraron usuarios.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="d-flex align-items-center flex-nowrap">
+                            <div class="user-avatar-sm me-3 flex-shrink-0">${user.avatar_initials}</div>
+                            <div class="flex-grow-1 text-nowrap">${user.full_name}</div>
+                        </div>
+                    </td>
+                    <td>${user.username}</td>
+                    <td>${user.email}</td>
+                    <td>
+                        <span class="badge ${user.role === 'admin' ? 'bg-primary' : 'bg-secondary'}">
+                            ${user.role_display}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-badge ${user.status === 'active' ? 'bg-success text-white' : 'bg-secondary text-white'}">
+                            ${user.status_display}
+                        </span>
+                    </td>
+                    <td>${user.created_at}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editUserModal"
+                                    data-user-id="${user.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#changePasswordModal"
+                                    data-user-id="${user.id}">
+                                <i class="fas fa-key"></i>
+                            </button>
+                            <button class="btn btn-sm ${user.status === 'active' ? 'btn-outline-danger' : 'btn-outline-success'} deactivate-btn"
+                                    data-user-id="${user.id}">
+                                <i class="fas ${user.status === 'active' ? 'fa-user-slash' : 'fa-user-check'}"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function renderPagination(pagination) {
+            const paginationContainer = document.getElementById('paginationContainer');
+            if (!paginationContainer) return;
+            
+            const { page, total_pages, total_count } = pagination;
+            
+            let paginationHTML = '';
+
+            if (page > 1) {
+                paginationHTML += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="${page - 1}">Anterior</a>
+                    </li>
+                `;
+            } else {
+                paginationHTML += `
+                    <li class="page-item disabled">
+                        <span class="page-link">Anterior</span>
+                    </li>
+                `;
+            }
+            
+            const startPage = Math.max(1, page - 2);
+            const endPage = Math.min(total_pages, page + 2);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === page) {
+                    paginationHTML += `
+                        <li class="page-item active">
+                            <span class="page-link">${i}</span>
+                        </li>
+                    `;
+                } else {
+                    paginationHTML += `
+                        <li class="page-item">
+                            <a class="page-link" href="#" data-page="${i}">${i}</a>
+                        </li>
+                    `;
+                }
+            }
+            
+            if (page < total_pages) {
+                paginationHTML += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="${page + 1}">Siguiente</a>
+                    </li>
+                `;
+            } else {
+                paginationHTML += `
+                    <li class="page-item disabled">
+                        <span class="page-link">Siguiente</span>
+                    </li>
+                `;
+            }
+            
+            paginationContainer.innerHTML = paginationHTML;
+            
+            paginationContainer.querySelectorAll('.page-link[data-page]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    currentPage = parseInt(this.getAttribute('data-page'));
+                    loadUsers();
+                });
+            });
+            
+            const paginationInfo = document.getElementById('paginationInfo');
+            const startUser = ((page - 1) * 15) + 1;
+            const endUser = Math.min(page * 15, total_count);
+            
+            paginationInfo.innerHTML = `
+                Mostrando ${startUser} a ${endUser} de ${total_count} usuarios
+            `;
+        }
+        
+        function createUser() {
+            const form = document.getElementById('createUserForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creando...';
+            submitBtn.disabled = true;
+            
+            fetch('/api/admin/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    bootstrap.Modal.getInstance(document.getElementById('createUserModal')).hide();
+                    form.reset();
+                    loadUsers();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al crear usuario');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = 'Crear Usuario';
+                submitBtn.disabled = false;
+            });
+        }
+        
+        function updateUser() {
+            const form = document.getElementById('editUserForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            data.is_active = document.getElementById('editIsActive').checked;
+            
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Actualizando...';
+            submitBtn.disabled = true;
+            
+            fetch(`/api/admin/users/${data.user_id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+                    loadUsers();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al actualizar usuario');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = 'Actualizar Usuario';
+                submitBtn.disabled = false;
+            });
+        }
+        
+        function changeUserPassword(userId, newPassword) {
+            const form = document.getElementById('changePasswordForm');
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Cambiando...';
+            submitBtn.disabled = true;
+            
+            fetch(`/api/admin/users/${userId}/password`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ new_password: newPassword })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+                    form.reset();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al cambiar la contraseña');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = 'Cambiar Contraseña';
+                submitBtn.disabled = false;
+            });
+        }
+        
+        function toggleUserStatus(userId, button) {
+            const originalHTML = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            button.disabled = true;
+            
+            fetch(`/api/admin/users/${userId}/status`, {
+                method: 'PUT'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    loadUsers();
+                } else {
+                    alert('Error: ' + data.message);
+                    button.innerHTML = originalHTML;
+                    button.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al cambiar el estado del usuario');
+                button.innerHTML = originalHTML;
+                button.disabled = false;
+            });
+        }
+    });
+</script>
+{% endblock %}
